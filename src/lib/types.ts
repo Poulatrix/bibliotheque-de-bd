@@ -19,5 +19,11 @@ export interface GoogleBookResult {
     imageLinks?: {
       thumbnail: string;
     };
+    seriesInfo?: {
+      seriesId: string;
+      seriesName: string;
+      volumeNumber?: number;
+    };
+    publisher?: string;
   };
 }
