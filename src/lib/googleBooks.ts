@@ -39,12 +39,33 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
 }
 
 export async function getSeriesBooks(seriesId: string): Promise<GoogleBookResult[]> {
+  console.log('Fetching series books for:', seriesId);
   try {
     const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=series:${seriesId}&langRestrict=fr&maxResults=20`
+      `${GOOGLE_BOOKS_API}?q=intitle:"${encodeURIComponent(seriesId)}"&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`
     );
+
+    if (!response.ok) {
+      console.error('API response error:', response.status, response.statusText);
+      return [];
+    }
+
     const data = await response.json();
-    return data.items || [];
+    console.log('Series books raw results:', data);
+
+    if (!data.items) {
+      console.log('No series books found');
+      return [];
+    }
+
+    const filteredResults = data.items.filter((item: GoogleBookResult) => 
+      item.volumeInfo &&
+      item.volumeInfo.title &&
+      (item.volumeInfo.authors?.length || item.volumeInfo.publisher)
+    );
+
+    console.log('Filtered series books:', filteredResults);
+    return filteredResults;
   } catch (error) {
     console.error('Error fetching series books:', error);
     return [];
