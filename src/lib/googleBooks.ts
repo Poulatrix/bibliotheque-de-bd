@@ -7,7 +7,7 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
   try {
     // Modification des paramètres de recherche pour mieux cibler les BDs françaises
     const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)&key=AIzaSyD_20F0tXxQh7kZvZpAUk3GiHR0Qm4_RYE`
+      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`
     );
     
     if (!response.ok) {
