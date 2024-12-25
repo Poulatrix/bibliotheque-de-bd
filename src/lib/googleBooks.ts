@@ -5,7 +5,6 @@ const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 export async function searchComics(query: string): Promise<GoogleBookResult[]> {
   console.log('Searching for comics with query:', query);
   try {
-    // Modification des paramètres de recherche pour mieux cibler les BDs françaises
     const response = await fetch(
       `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`
     );
@@ -23,11 +22,10 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
       return [];
     }
 
-    // Filtrer pour ne garder que les résultats avec des informations suffisantes
     const filteredResults = data.items.filter((item: GoogleBookResult) => 
       item.volumeInfo &&
       item.volumeInfo.title &&
-      (item.volumeInfo.authors?.length || item.volumeInfo.publisher)
+      (item.volumeInfo.authors?.length)
     );
 
     console.log('Filtered results:', filteredResults);
@@ -36,6 +34,11 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
     console.error('Error searching comics:', error);
     throw error;
   }
+}
+
+export async function searchByISBN(isbn: string): Promise<GoogleBookResult[]> {
+  console.log('Searching by ISBN:', isbn);
+  return searchComics(`isbn:${isbn}`);
 }
 
 export async function getSeriesBooks(seriesId: string): Promise<GoogleBookResult[]> {
@@ -61,7 +64,7 @@ export async function getSeriesBooks(seriesId: string): Promise<GoogleBookResult
     const filteredResults = data.items.filter((item: GoogleBookResult) => 
       item.volumeInfo &&
       item.volumeInfo.title &&
-      (item.volumeInfo.authors?.length || item.volumeInfo.publisher)
+      (item.volumeInfo.authors?.length)
     );
 
     console.log('Filtered series books:', filteredResults);

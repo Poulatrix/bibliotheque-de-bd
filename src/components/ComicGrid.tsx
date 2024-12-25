@@ -23,7 +23,11 @@ export function ComicGrid({ comics }: ComicGridProps) {
     if (!acc[series]) {
       acc[series] = [];
     }
-    acc[series].push(comic);
+    // Vérifier si le comic existe déjà dans la série
+    const exists = acc[series].some(c => c.id === comic.id);
+    if (!exists) {
+      acc[series].push(comic);
+    }
     return acc;
   }, {});
 
@@ -36,18 +40,25 @@ export function ComicGrid({ comics }: ComicGridProps) {
   sortedSeries.forEach(series => {
     groupedComics[series].sort((a, b) => {
       if (a.volume && b.volume) {
-        return a.volume - b.volume;
+        // Convertir les volumes en nombres pour un tri correct
+        const volA = parseInt(a.volume.toString());
+        const volB = parseInt(b.volume.toString());
+        return volA - volB;
       }
       return a.title.localeCompare(b.title, 'fr', { ignorePunctuation: true });
     });
 
     // Ajouter les tomes manquants
     if (series !== 'Autres') {
-      const volumes = groupedComics[series].map(c => c.volume).filter(v => v !== undefined);
+      const volumes = groupedComics[series]
+        .map(c => c.volume)
+        .filter(v => v !== undefined)
+        .map(v => parseInt(v!.toString()));
+      
       if (volumes.length > 0) {
-        const maxVol = Math.max(...volumes as number[]);
+        const maxVol = Math.max(...volumes);
         for (let i = 1; i <= maxVol; i++) {
-          if (!groupedComics[series].find(c => c.volume === i)) {
+          if (!volumes.includes(i)) {
             groupedComics[series].push({
               id: `missing-${series}-${i}`,
               title: `Tome ${i}`,
@@ -59,6 +70,13 @@ export function ComicGrid({ comics }: ComicGridProps) {
             });
           }
         }
+        // Re-trier après avoir ajouté les tomes manquants
+        groupedComics[series].sort((a, b) => {
+          if (a.volume && b.volume) {
+            return parseInt(a.volume.toString()) - parseInt(b.volume.toString());
+          }
+          return 0;
+        });
       }
     }
   });

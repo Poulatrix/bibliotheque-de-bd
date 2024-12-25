@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Comic } from '@/lib/types';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { searchByISBN } from '@/lib/googleBooks';
 
 interface AddComicModalProps {
   onAddComic: (comic: Comic) => void;
@@ -13,6 +14,7 @@ interface AddComicModalProps {
 
 export function AddComicModal({ onAddComic }: AddComicModalProps) {
   const [open, setOpen] = useState(false);
+  const [isbn, setIsbn] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     series: '',
@@ -21,6 +23,29 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
     year: '',
     coverUrl: '',
   });
+
+  const handleIsbnSearch = async () => {
+    if (!isbn.trim()) return;
+    try {
+      const results = await searchByISBN(isbn);
+      if (results.length > 0) {
+        const book = results[0];
+        setFormData({
+          title: book.volumeInfo.title,
+          series: book.volumeInfo.title.split(' - ')[0] || '',
+          volume: '',
+          author: book.volumeInfo.authors?.[0] || '',
+          year: book.volumeInfo.publishedDate ? book.volumeInfo.publishedDate.substring(0, 4) : '',
+          coverUrl: book.volumeInfo.imageLinks?.thumbnail || '',
+        });
+        toast.success("Informations trouvées !");
+      } else {
+        toast.error("Aucun résultat trouvé pour cet ISBN");
+      }
+    } catch (error) {
+      toast.error("Erreur lors de la recherche");
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +69,7 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
       year: '',
       coverUrl: '',
     });
+    setIsbn('');
   };
 
   return (
@@ -54,11 +80,30 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
           Ajouter une BD
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-library-paper">
         <DialogHeader>
           <DialogTitle className="font-merriweather">Ajouter une nouvelle BD</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="isbn">ISBN</Label>
+              <Input
+                id="isbn"
+                value={isbn}
+                onChange={(e) => setIsbn(e.target.value)}
+                placeholder="Rechercher par ISBN..."
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={handleIsbnSearch}
+              className="mt-8"
+              variant="outline"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="title">Titre *</Label>
             <Input
