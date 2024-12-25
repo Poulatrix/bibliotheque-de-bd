@@ -1,7 +1,9 @@
 import { Comic } from '@/lib/types';
 import { ComicCard } from './ComicCard';
 import { AlphabetNav } from './AlphabetNav';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ComicGridProps {
   comics: Comic[];
@@ -13,6 +15,7 @@ interface SeriesGroup {
 
 export function ComicGrid({ comics }: ComicGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
+  const [showMissingOnly, setShowMissingOnly] = useState(false);
 
   // Trier les comics par série puis par titre
   const groupedComics = comics.reduce((acc: SeriesGroup, comic) => {
@@ -29,11 +32,35 @@ export function ComicGrid({ comics }: ComicGridProps) {
     a.localeCompare(b, 'fr', { ignorePunctuation: true })
   );
 
-  // Trier les comics dans chaque série
+  // Trier les comics dans chaque série et ajouter les tomes manquants
   sortedSeries.forEach(series => {
-    groupedComics[series].sort((a, b) => 
-      a.title.localeCompare(b.title, 'fr', { ignorePunctuation: true })
-    );
+    groupedComics[series].sort((a, b) => {
+      if (a.volume && b.volume) {
+        return a.volume - b.volume;
+      }
+      return a.title.localeCompare(b.title, 'fr', { ignorePunctuation: true });
+    });
+
+    // Ajouter les tomes manquants
+    if (series !== 'Autres') {
+      const volumes = groupedComics[series].map(c => c.volume).filter(v => v !== undefined);
+      if (volumes.length > 0) {
+        const maxVol = Math.max(...volumes as number[]);
+        for (let i = 1; i <= maxVol; i++) {
+          if (!groupedComics[series].find(c => c.volume === i)) {
+            groupedComics[series].push({
+              id: `missing-${series}-${i}`,
+              title: `Tome ${i}`,
+              series,
+              volume: i,
+              author: groupedComics[series][0].author,
+              coverUrl: '/placeholder.svg',
+              missing: true
+            });
+          }
+        }
+      }
+    }
   });
 
   const scrollToLetter = (letter: string) => {
@@ -51,17 +78,39 @@ export function ComicGrid({ comics }: ComicGridProps) {
 
   return (
     <div ref={gridRef} className="relative pb-8">
-      <AlphabetNav onLetterClick={scrollToLetter} />
-      {sortedSeries.map((series) => (
-        <section key={series} className="series-section" id={`series-${series}`}>
-          <h2 className="series-title">{series}</h2>
-          <div className="comic-grid">
-            {groupedComics[series].map((comic) => (
-              <ComicCard key={comic.id} comic={comic} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="sticky top-0 z-50 bg-library-background py-4">
+        <AlphabetNav onLetterClick={scrollToLetter} />
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <Switch
+            id="missing-only"
+            checked={showMissingOnly}
+            onCheckedChange={setShowMissingOnly}
+          />
+          <Label htmlFor="missing-only">Afficher uniquement les tomes manquants</Label>
+        </div>
+      </div>
+      {sortedSeries.map((series) => {
+        const filteredComics = showMissingOnly
+          ? groupedComics[series].filter(comic => comic.missing)
+          : groupedComics[series];
+
+        if (filteredComics.length === 0) return null;
+
+        return (
+          <section key={series} className="series-section" id={`series-${series}`}>
+            <h2 className="series-title">{series}</h2>
+            <div className="comic-grid">
+              {filteredComics.map((comic) => (
+                <ComicCard 
+                  key={comic.id} 
+                  comic={comic} 
+                  className={comic.missing ? 'missing' : ''}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

@@ -2,18 +2,20 @@ import { Comic } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { useState } from 'react';
 import { ComicDetail } from './ComicDetail';
+import { cn } from '@/lib/utils';
 
 interface ComicCardProps {
   comic: Comic;
+  className?: string;
 }
 
-export function ComicCard({ comic }: ComicCardProps) {
+export function ComicCard({ comic, className }: ComicCardProps) {
   const [showDetail, setShowDetail] = useState(false);
 
   return (
     <>
       <Card 
-        className="comic-card cursor-pointer hover:shadow-lg transition-shadow"
+        className={cn("comic-card cursor-pointer hover:shadow-lg transition-shadow", className)}
         onClick={() => setShowDetail(true)}
       >
         <CardContent className="p-0 aspect-[2/3] relative">

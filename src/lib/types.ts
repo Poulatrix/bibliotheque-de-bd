@@ -7,6 +7,7 @@ export interface Comic {
   year?: number;
   coverUrl: string;
   description?: string;
+  missing?: boolean;
 }
 
 export interface GoogleBookResult {
@@ -19,11 +20,5 @@ export interface GoogleBookResult {
     imageLinks?: {
       thumbnail: string;
     };
-    seriesInfo?: {
-      seriesId: string;
-      seriesName: string;
-      volumeNumber?: number;
-    };
-    publisher?: string;
   };
 }

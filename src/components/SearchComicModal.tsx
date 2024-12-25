@@ -57,7 +57,7 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
           Rechercher
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl bg-library-paper">
         <DialogHeader>
           <DialogTitle className="font-merriweather">Rechercher une BD</DialogTitle>
         </DialogHeader>
@@ -76,7 +76,7 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
           {results.map((result) => (
             <div
               key={result.id}
-              className="flex gap-4 p-4 border rounded-lg hover:bg-gray-50"
+              className="flex gap-4 p-4 border rounded-lg bg-white hover:bg-gray-50"
             >
               <img
                 src={result.volumeInfo.imageLinks?.thumbnail || '/placeholder.svg'}
