@@ -28,19 +28,25 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
     if (!isbn.trim()) return;
     
     try {
+      console.log('Searching with ISBN/EAN:', isbn);
       // Essayer d'abord avec l'ISBN
       let results = await searchByISBN(isbn);
       
       // Si pas de résultat et que c'est un EAN (13 chiffres), convertir en ISBN-10
       if (results.length === 0 && isbn.length === 13 && /^\d+$/.test(isbn)) {
+        console.log('Converting EAN to ISBN');
         const isbn10 = convertEANtoISBN(isbn);
         if (isbn10) {
+          console.log('Converted ISBN:', isbn10);
           results = await searchByISBN(isbn10);
         }
       }
 
       if (results.length > 0) {
         const book = results[0];
+        console.log('Book found:', book);
+        
+        // Extraire le nom de la série et le numéro de tome du titre
         const titleParts = book.volumeInfo.title.split(' - ');
         const volumeMatch = book.volumeInfo.title.match(/(?:T|Tome|Vol\.?)\s*(\d+)/i);
         
@@ -59,6 +65,26 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
     } catch (error) {
       console.error('Error searching by ISBN:', error);
       toast.error("Erreur lors de la recherche");
+    }
+  };
+
+  const handleSearchCover = async () => {
+    if (!formData.title || !formData.author) {
+      toast.error("Le titre et l'auteur sont nécessaires pour rechercher une couverture");
+      return;
+    }
+
+    try {
+      const coverUrl = await searchCoverImage(formData.title, formData.author);
+      if (coverUrl) {
+        setFormData(prev => ({ ...prev, coverUrl }));
+        toast.success("Couverture trouvée !");
+      } else {
+        toast.error("Aucune couverture trouvée");
+      }
+    } catch (error) {
+      console.error('Error searching cover:', error);
+      toast.error("Erreur lors de la recherche de couverture");
     }
   };
 
@@ -102,12 +128,12 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2">
             <div className="flex-1 space-y-2">
-              <Label htmlFor="isbn">ISBN</Label>
+              <Label htmlFor="isbn">ISBN/EAN</Label>
               <Input
                 id="isbn"
                 value={isbn}
                 onChange={(e) => setIsbn(e.target.value)}
-                placeholder="Rechercher par ISBN..."
+                placeholder="Rechercher par ISBN ou EAN..."
               />
             </div>
             <Button
@@ -164,7 +190,18 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="coverUrl">URL de la couverture</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="coverUrl">URL de la couverture</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSearchCover}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Rechercher une couverture
+              </Button>
+            </div>
             <Input
               id="coverUrl"
               type="url"
