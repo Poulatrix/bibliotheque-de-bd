@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Comic, GoogleBookResult } from '@/lib/types';
 import { Search, Plus } from 'lucide-react';
-import { searchComics } from '@/lib/googleBooks';
+import { searchComics, searchCoverImage } from '@/lib/googleBooks';
 import { toast } from 'sonner';
 
 interface SearchComicModalProps {
