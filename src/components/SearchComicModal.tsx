@@ -35,9 +35,19 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
   };
 
   const handleAddComic = (result: GoogleBookResult) => {
+    // Extraire le nom de la série du titre
+    const titleParts = result.volumeInfo.title.split(' - ');
+    const series = titleParts.length > 1 ? titleParts[0] : undefined;
+    
+    // Extraire le numéro de tome s'il existe dans le titre
+    const volumeMatch = result.volumeInfo.title.match(/(?:T|Tome|Vol\.?)\s*(\d+)/i);
+    const volume = volumeMatch ? parseInt(volumeMatch[1]) : undefined;
+
     const comic: Comic = {
       id: result.id,
       title: result.volumeInfo.title,
+      series: series,
+      volume: volume,
       author: result.volumeInfo.authors?.[0] || "Auteur inconnu",
       year: result.volumeInfo.publishedDate ? 
         parseInt(result.volumeInfo.publishedDate.substring(0, 4)) : 
@@ -45,7 +55,19 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
       coverUrl: result.volumeInfo.imageLinks?.thumbnail || '/placeholder.svg',
       description: result.volumeInfo.description,
     };
-    onAddComic(comic);
+
+    // Si pas de couverture, rechercher une image
+    if (!result.volumeInfo.imageLinks?.thumbnail) {
+      searchCoverImage(comic.title, comic.author).then(coverUrl => {
+        if (coverUrl) {
+          comic.coverUrl = coverUrl;
+        }
+        onAddComic(comic);
+      });
+    } else {
+      onAddComic(comic);
+    }
+    
     toast.success("BD ajoutée avec succès!");
   };
 

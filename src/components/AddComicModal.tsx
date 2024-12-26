@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Comic } from '@/lib/types';
 import { PlusCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import { searchByISBN } from '@/lib/googleBooks';
+import { searchByISBN, convertEANtoISBN, searchCoverImage } from '@/lib/googleBooks';
 
 interface AddComicModalProps {
   onAddComic: (comic: Comic) => void;
@@ -26,23 +26,38 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
 
   const handleIsbnSearch = async () => {
     if (!isbn.trim()) return;
+    
     try {
-      const results = await searchByISBN(isbn);
+      // Essayer d'abord avec l'ISBN
+      let results = await searchByISBN(isbn);
+      
+      // Si pas de résultat et que c'est un EAN (13 chiffres), convertir en ISBN-10
+      if (results.length === 0 && isbn.length === 13 && /^\d+$/.test(isbn)) {
+        const isbn10 = convertEANtoISBN(isbn);
+        if (isbn10) {
+          results = await searchByISBN(isbn10);
+        }
+      }
+
       if (results.length > 0) {
         const book = results[0];
+        const titleParts = book.volumeInfo.title.split(' - ');
+        const volumeMatch = book.volumeInfo.title.match(/(?:T|Tome|Vol\.?)\s*(\d+)/i);
+        
         setFormData({
           title: book.volumeInfo.title,
-          series: book.volumeInfo.title.split(' - ')[0] || '',
-          volume: '',
+          series: titleParts.length > 1 ? titleParts[0] : '',
+          volume: volumeMatch ? volumeMatch[1] : '',
           author: book.volumeInfo.authors?.[0] || '',
           year: book.volumeInfo.publishedDate ? book.volumeInfo.publishedDate.substring(0, 4) : '',
           coverUrl: book.volumeInfo.imageLinks?.thumbnail || '',
         });
         toast.success("Informations trouvées !");
       } else {
-        toast.error("Aucun résultat trouvé pour cet ISBN");
+        toast.error("Aucun résultat trouvé pour cet ISBN/EAN");
       }
     } catch (error) {
+      console.error('Error searching by ISBN:', error);
       toast.error("Erreur lors de la recherche");
     }
   };

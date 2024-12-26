@@ -103,8 +103,11 @@ export function ComicGrid({ comics }: ComicGridProps) {
             id="missing-only"
             checked={showMissingOnly}
             onCheckedChange={setShowMissingOnly}
+            className="data-[state=checked]:bg-green-500 border-2 border-gray-300"
           />
-          <Label htmlFor="missing-only">Afficher uniquement les tomes manquants</Label>
+          <Label htmlFor="missing-only" className="text-library-text">
+            Afficher uniquement les tomes manquants
+          </Label>
         </div>
       </div>
       {sortedSeries.map((series) => {

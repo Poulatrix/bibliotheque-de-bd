@@ -74,3 +74,36 @@ export async function getSeriesBooks(seriesId: string): Promise<GoogleBookResult
     return [];
   }
 }
+
+export function convertEANtoISBN(ean: string): string | null {
+  if (ean.length !== 13 || !ean.startsWith('978')) return null;
+  
+  const isbn9 = ean.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(isbn9[i]) * (10 - i);
+  }
+  const checkDigit = (11 - (sum % 11)) % 11;
+  return isbn9 + (checkDigit === 10 ? 'X' : checkDigit.toString());
+}
+
+export async function searchCoverImage(title: string, author: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/customsearch/v1?` +
+      `q=${encodeURIComponent(`${title} ${author} bd cover`)}` +
+      `&searchType=image` +
+      `&num=1` +
+      `&cx=YOUR_CUSTOM_SEARCH_ENGINE_ID` +
+      `&key=YOUR_API_KEY`
+    );
+
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    return data.items?.[0]?.link || null;
+  } catch (error) {
+    console.error('Error searching cover image:', error);
+    return null;
+  }
+}
