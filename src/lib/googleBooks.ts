@@ -88,20 +88,29 @@ export function convertEANtoISBN(ean: string): string | null {
 }
 
 export async function searchCoverImage(title: string, author: string): Promise<string | null> {
+  console.log('Searching cover image for:', title, author);
   try {
+    // Use the Books API instead of Custom Search API
     const response = await fetch(
-      `https://www.googleapis.com/customsearch/v1?` +
-      `q=${encodeURIComponent(`${title} ${author} bd cover`)}` +
-      `&searchType=image` +
-      `&num=1` +
-      `&cx=YOUR_CUSTOM_SEARCH_ENGINE_ID` +
-      `&key=YOUR_API_KEY`
+      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(`${title} ${author}`)}&langRestrict=fr&maxResults=1&printType=books&fields=items(volumeInfo(imageLinks))`
     );
 
-    if (!response.ok) return null;
-    
+    if (!response.ok) {
+      console.error('API response error:', response.status, response.statusText);
+      return null;
+    }
+
     const data = await response.json();
-    return data.items?.[0]?.link || null;
+    console.log('Cover search results:', data);
+
+    if (!data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail) {
+      console.log('No cover image found');
+      return null;
+    }
+
+    // Get the highest quality image available
+    const imageLinks = data.items[0].volumeInfo.imageLinks;
+    return imageLinks.extraLarge || imageLinks.large || imageLinks.medium || imageLinks.thumbnail || null;
   } catch (error) {
     console.error('Error searching cover image:', error);
     return null;
