@@ -28,7 +28,7 @@ export function ComicGrid({ comics }: ComicGridProps) {
         ...comic,
         missing: false,
         dateAdded: new Date(),
-        coverUrl: comic.coverUrl !== '/placeholder.svg' ? comic.coverUrl : comic.originalCoverUrl || comic.coverUrl
+        coverUrl: comic.coverUrl !== '/placeholder.svg' ? comic.coverUrl : comic.coverUrl
       });
       
       toast({
@@ -125,20 +125,21 @@ export function ComicGrid({ comics }: ComicGridProps) {
 
   return (
     <div ref={gridRef} className="relative pb-8">
-      <div className="sticky top-0 z-50 bg-library-background py-4">
+      <div className="sticky top-[72px] z-40 bg-orange-50 py-4">
         <AlphabetNav onLetterClick={scrollToLetter} />
         <div className="flex items-center justify-end gap-2 mb-4">
           <Switch
             id="missing-only"
             checked={showMissingOnly}
             onCheckedChange={setShowMissingOnly}
-            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-blue-500 border-2 border-gray-300"
+            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-blue-500"
           />
-          <Label htmlFor="missing-only" className="text-library-text">
+          <Label htmlFor="missing-only" className="text-gray-700">
             Afficher uniquement les tomes manquants
           </Label>
         </div>
       </div>
+      
       {sortedSeries.map((series) => {
         const filteredComics = showMissingOnly
           ? groupedComics[series].filter(comic => comic.missing)

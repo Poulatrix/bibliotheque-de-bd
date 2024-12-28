@@ -5,8 +5,9 @@ import { AddComicModal } from '@/components/AddComicModal';
 import { SearchComicModal } from '@/components/SearchComicModal';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { updateMissingCovers } from '@/lib/coverSearch';
 
 export default function Index() {
   const [comics, setComics] = useState<Comic[]>([]);
@@ -28,8 +29,15 @@ export default function Index() {
     return () => unsubscribe();
   }, []);
 
-  const handleAddComic = (comic: Comic) => {
-    setComics((prev) => [...prev, comic]);
+  const handleAddComic = async (comic: Comic) => {
+    try {
+      await addDoc(collection(db, 'comics'), {
+        ...comic,
+        dateAdded: new Date(),
+      });
+    } catch (error) {
+      console.error("Error adding comic:", error);
+    }
   };
 
   const filteredComics = comics.filter(
@@ -39,40 +47,37 @@ export default function Index() {
       (comic.series && comic.series.toLowerCase().includes(filter.toLowerCase()))
   );
 
+  useEffect(() => {
+    updateMissingCovers();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-library-background">
-      <header className="bg-library-paper shadow-sm fixed top-0 left-0 right-0 z-50">
-        <div className="container mx-auto py-6">
-          <h1 className="text-3xl font-merriweather font-bold text-library-text mb-6">
-            Ma Bibliothèque de BD
-          </h1>
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex gap-2">
+    <div className="min-h-screen bg-orange-50">
+      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-between py-4">
+            <h1 className="text-3xl font-bold text-orange-600">
+              Ma Bibliothèque
+            </h1>
+            <div className="flex items-center gap-4">
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="search"
+                  placeholder="Rechercher..."
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="pl-10 bg-gray-50 border-gray-200"
+                />
+              </div>
               <AddComicModal onAddComic={handleAddComic} />
               <SearchComicModal onAddComic={handleAddComic} />
-            </div>
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="search"
-                placeholder="Filtrer par titre, auteur ou série..."
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="pl-10"
-              />
             </div>
           </div>
         </div>
       </header>
-      <main className="container mx-auto py-8 mt-[180px]">
+      <main className="container mx-auto pt-24">
         <ComicGrid comics={filteredComics} />
-        {filteredComics.length === 0 && (
-          <div className="text-center text-library-muted py-12">
-            {comics.length === 0
-              ? "Votre bibliothèque est vide. Commencez par ajouter des BD!"
-              : "Aucune BD ne correspond à votre recherche."}
-          </div>
-        )}
       </main>
     </div>
   );
