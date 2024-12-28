@@ -1,12 +1,10 @@
 import { Comic } from '@/lib/types';
-import { ComicCard } from './ComicCard';
-import { AlphabetNav } from './AlphabetNav';
 import { useRef, useState } from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { FilterSection } from './FilterSection';
+import { SeriesSection } from './SeriesSection';
 
 interface ComicGridProps {
   comics: Comic[];
@@ -28,14 +26,13 @@ export function ComicGrid({ comics }: ComicGridProps) {
         ...comic,
         missing: false,
         dateAdded: new Date(),
-        coverUrl: comic.coverUrl !== '/placeholder.svg' ? comic.coverUrl : comic.coverUrl
+        coverUrl: comic.coverUrl
       });
       
       toast({
         title: "BD ajoutée",
         description: `${comic.title} a été ajouté à votre bibliothèque`,
       });
-
     } catch (error) {
       console.error("Erreur lors de l'ajout de la BD:", error);
       toast({
@@ -46,38 +43,25 @@ export function ComicGrid({ comics }: ComicGridProps) {
     }
   };
 
-  // Trier les comics par série puis par titre
+  // Grouper et trier les comics
   const groupedComics = comics.reduce((acc: SeriesGroup, comic) => {
     const series = comic.series || 'Autres';
     if (!acc[series]) {
       acc[series] = [];
     }
-    // Vérifier si le comic existe déjà dans la série
-    const exists = acc[series].some(c => c.id === comic.id);
-    if (!exists) {
+    if (!acc[series].some(c => c.id === comic.id)) {
       acc[series].push(comic);
     }
     return acc;
   }, {});
 
-  // Trier les séries par ordre alphabétique
+  // Trier les séries
   const sortedSeries = Object.keys(groupedComics).sort((a, b) => 
     a.localeCompare(b, 'fr', { ignorePunctuation: true })
   );
 
-  // Trier les comics dans chaque série et ajouter les tomes manquants
+  // Ajouter les tomes manquants et trier
   sortedSeries.forEach(series => {
-    groupedComics[series].sort((a, b) => {
-      if (a.volume && b.volume) {
-        // Convertir les volumes en nombres pour un tri correct
-        const volA = parseInt(a.volume.toString());
-        const volB = parseInt(b.volume.toString());
-        return volA - volB;
-      }
-      return a.title.localeCompare(b.title, 'fr', { ignorePunctuation: true });
-    });
-
-    // Ajouter les tomes manquants
     if (series !== 'Autres') {
       const volumes = groupedComics[series]
         .map(c => c.volume)
@@ -86,20 +70,22 @@ export function ComicGrid({ comics }: ComicGridProps) {
       
       if (volumes.length > 0) {
         const maxVol = Math.max(...volumes);
+        const firstComic = groupedComics[series][0];
+        
         for (let i = 1; i <= maxVol; i++) {
           if (!volumes.includes(i)) {
             groupedComics[series].push({
               id: `missing-${series}-${i}`,
-              title: `Tome ${i}`,
+              title: `${series} - Tome ${i}`,
               series,
               volume: i,
-              author: groupedComics[series][0].author,
+              author: firstComic.author,
               coverUrl: '/placeholder.svg',
               missing: true
             });
           }
         }
-        // Re-trier après avoir ajouté les tomes manquants
+        
         groupedComics[series].sort((a, b) => {
           if (a.volume && b.volume) {
             return parseInt(a.volume.toString()) - parseInt(b.volume.toString());
@@ -125,44 +111,23 @@ export function ComicGrid({ comics }: ComicGridProps) {
 
   return (
     <div ref={gridRef} className="relative pb-8">
-      <div className="sticky top-[72px] z-40 bg-orange-50 py-4">
-        <AlphabetNav onLetterClick={scrollToLetter} />
-        <div className="flex items-center justify-end gap-2 mb-4">
-          <Switch
-            id="missing-only"
-            checked={showMissingOnly}
-            onCheckedChange={setShowMissingOnly}
-            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-blue-500"
-          />
-          <Label htmlFor="missing-only" className="text-gray-700">
-            Afficher uniquement les tomes manquants
-          </Label>
-        </div>
-      </div>
+      <FilterSection
+        showMissingOnly={showMissingOnly}
+        onShowMissingChange={setShowMissingOnly}
+        onLetterClick={scrollToLetter}
+      />
       
-      {sortedSeries.map((series) => {
-        const filteredComics = showMissingOnly
-          ? groupedComics[series].filter(comic => comic.missing)
-          : groupedComics[series];
-
-        if (filteredComics.length === 0) return null;
-
-        return (
-          <section key={series} className="series-section" id={`series-${series}`}>
-            <h2 className="series-title">{series}</h2>
-            <div className="comic-grid">
-              {filteredComics.map((comic) => (
-                <ComicCard 
-                  key={comic.id} 
-                  comic={comic} 
-                  className={comic.missing ? 'missing' : ''}
-                  onAddMissing={handleAddMissing}
-                />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      <div className="mt-4 space-y-8">
+        {sortedSeries.map((series) => (
+          <SeriesSection
+            key={series}
+            series={series}
+            comics={groupedComics[series]}
+            onAddMissing={handleAddMissing}
+            showMissingOnly={showMissingOnly}
+          />
+        ))}
+      </div>
     </div>
   );
 }
