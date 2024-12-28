@@ -1,3 +1,5 @@
+import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { db } from './firebase';
 import { searchComics } from './googleBooks';
 
 export async function searchCoversByTitle(
