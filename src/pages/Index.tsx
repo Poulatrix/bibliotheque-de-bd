@@ -5,7 +5,7 @@ import { AddComicModal } from '@/components/AddComicModal';
 import { SearchComicModal } from '@/components/SearchComicModal';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function Index() {
@@ -41,7 +41,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-library-background">
-      <header className="bg-library-paper shadow-sm">
+      <header className="bg-library-paper shadow-sm fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto py-6">
           <h1 className="text-3xl font-merriweather font-bold text-library-text mb-6">
             Ma Bibliothèque de BD
@@ -64,7 +64,7 @@ export default function Index() {
           </div>
         </div>
       </header>
-      <main className="container mx-auto py-8">
+      <main className="container mx-auto py-8 mt-[180px]">
         <ComicGrid comics={filteredComics} />
         {filteredComics.length === 0 && (
           <div className="text-center text-library-muted py-12">
