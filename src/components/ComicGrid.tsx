@@ -4,6 +4,9 @@ import { AlphabetNav } from './AlphabetNav';
 import { useRef, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 interface ComicGridProps {
   comics: Comic[];
@@ -16,6 +19,29 @@ interface SeriesGroup {
 export function ComicGrid({ comics }: ComicGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [showMissingOnly, setShowMissingOnly] = useState(false);
+  const { toast } = useToast();
+
+  const handleAddMissing = async (comic: Comic) => {
+    try {
+      await addDoc(collection(db, 'comics'), {
+        ...comic,
+        missing: false,
+        dateAdded: new Date()
+      });
+      
+      toast({
+        title: "BD ajoutée",
+        description: `${comic.title} a été ajouté à votre bibliothèque`,
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la BD:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la BD à votre bibliothèque",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Trier les comics par série puis par titre
   const groupedComics = comics.reduce((acc: SeriesGroup, comic) => {
@@ -103,7 +129,7 @@ export function ComicGrid({ comics }: ComicGridProps) {
             id="missing-only"
             checked={showMissingOnly}
             onCheckedChange={setShowMissingOnly}
-            className="data-[state=checked]:bg-green-500 border-2 border-gray-300"
+            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-blue-500 border-2 border-gray-300"
           />
           <Label htmlFor="missing-only" className="text-library-text">
             Afficher uniquement les tomes manquants
@@ -126,6 +152,7 @@ export function ComicGrid({ comics }: ComicGridProps) {
                   key={comic.id} 
                   comic={comic} 
                   className={comic.missing ? 'missing' : ''}
+                  onAddMissing={handleAddMissing}
                 />
               ))}
             </div>

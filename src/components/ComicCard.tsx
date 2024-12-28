@@ -20,12 +20,16 @@ interface ComicCardProps {
 export function ComicCard({ comic, className, onAddMissing }: ComicCardProps) {
   const [showDetail, setShowDetail] = useState(false);
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (comic.missing && onAddMissing) {
-      e.stopPropagation();
-      onAddMissing(comic);
-    } else {
+  const handleClick = () => {
+    if (!comic.missing) {
       setShowDetail(true);
+    }
+  };
+
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (comic.missing && onAddMissing) {
+      onAddMissing(comic);
     }
   };
 
@@ -50,11 +54,8 @@ export function ComicCard({ comic, className, onAddMissing }: ComicCardProps) {
               />
               {comic.missing && (
                 <div 
-                  className="absolute inset-0 flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddMissing?.(comic);
-                  }}
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                  onClick={handleAddClick}
                 >
                   <Plus className="h-8 w-8 text-white bg-black/50 rounded-full p-1" />
                 </div>
