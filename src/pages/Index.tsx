@@ -5,9 +5,10 @@ import { AddComicModal } from '@/components/AddComicModal';
 import { SearchComicModal } from '@/components/SearchComicModal';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { collection, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { updateMissingCovers } from '@/lib/coverSearch';
+import { toast } from 'sonner';
 
 export default function Index() {
   const [comics, setComics] = useState<Comic[]>([]);
@@ -31,12 +32,35 @@ export default function Index() {
 
   const handleAddComic = async (comic: Comic) => {
     try {
-      await addDoc(collection(db, 'comics'), {
+      console.log("Adding comic to database:", comic);
+      
+      // Vérifier si la BD existe déjà
+      const existingComicsQuery = query(
+        collection(db, 'comics'),
+        where('title', '==', comic.title),
+        where('author', '==', comic.author)
+      );
+      
+      const existingComics = await getDocs(existingComicsQuery);
+      
+      if (!existingComics.empty) {
+        toast.error("Cette BD existe déjà dans votre bibliothèque");
+        return;
+      }
+
+      // S'assurer que tous les champs sont définis
+      const comicToAdd = {
         ...comic,
+        series: comic.series || 'Autres',
         dateAdded: new Date(),
-      });
+        coverUrl: comic.coverUrl || '/placeholder.svg'
+      };
+
+      await addDoc(collection(db, 'comics'), comicToAdd);
+      toast.success("BD ajoutée avec succès");
     } catch (error) {
       console.error("Error adding comic:", error);
+      toast.error("Erreur lors de l'ajout de la BD");
     }
   };
 
@@ -49,6 +73,8 @@ export default function Index() {
 
   useEffect(() => {
     updateMissingCovers();
+    const interval = setInterval(updateMissingCovers, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

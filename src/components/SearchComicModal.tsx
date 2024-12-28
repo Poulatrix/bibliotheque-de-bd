@@ -34,41 +34,58 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
     }
   };
 
-  const handleAddComic = (result: GoogleBookResult) => {
-    // Extraire le nom de la série du titre
-    const titleParts = result.volumeInfo.title.split(' - ');
-    const series = titleParts.length > 1 ? titleParts[0] : undefined;
-    
-    // Extraire le numéro de tome s'il existe dans le titre
-    const volumeMatch = result.volumeInfo.title.match(/(?:T|Tome|Vol\.?)\s*(\d+)/i);
-    const volume = volumeMatch ? parseInt(volumeMatch[1]) : undefined;
+  const handleAddComic = async (result: GoogleBookResult) => {
+    try {
+      console.log("Processing comic for addition:", result);
+      
+      // Extraire le nom de la série et le numéro de tome du titre
+      const titleParts = result.volumeInfo.title.split(' - ');
+      let series = titleParts.length > 1 ? titleParts[0] : 'Autres';
+      let volume: number | undefined;
+      
+      // Recherche du numéro de tome dans le titre
+      const volumeMatch = result.volumeInfo.title.match(/(?:T|Tome|Vol\.?)\s*(\d+)/i);
+      if (volumeMatch) {
+        volume = parseInt(volumeMatch[1]);
+      }
 
-    const comic: Comic = {
-      id: result.id,
-      title: result.volumeInfo.title,
-      series: series,
-      volume: volume,
-      author: result.volumeInfo.authors?.[0] || "Auteur inconnu",
-      year: result.volumeInfo.publishedDate ? 
-        parseInt(result.volumeInfo.publishedDate.substring(0, 4)) : 
-        undefined,
-      coverUrl: result.volumeInfo.imageLinks?.thumbnail || '/placeholder.svg',
-      description: result.volumeInfo.description,
-    };
+      // Si on n'a pas trouvé de série mais qu'on a un volume, on utilise le titre comme série
+      if (series === 'Autres' && volume) {
+        series = result.volumeInfo.title.split(/(?:T|Tome|Vol\.?)/i)[0].trim();
+      }
 
-    // Si pas de couverture, rechercher une image
-    if (!result.volumeInfo.imageLinks?.thumbnail) {
-      searchCoverImage(comic.title, comic.author).then(coverUrl => {
+      const comic: Comic = {
+        id: result.id,
+        title: result.volumeInfo.title,
+        series: series,
+        volume: volume,
+        author: result.volumeInfo.authors?.[0] || "Auteur inconnu",
+        year: result.volumeInfo.publishedDate ? 
+          parseInt(result.volumeInfo.publishedDate.substring(0, 4)) : 
+          undefined,
+        coverUrl: result.volumeInfo.imageLinks?.thumbnail || '/placeholder.svg',
+        description: result.volumeInfo.description || '',
+      };
+
+      console.log("Prepared comic object:", comic);
+
+      // Si pas de couverture, rechercher une image
+      if (!result.volumeInfo.imageLinks?.thumbnail) {
+        const searchTitle = `${comic.series} ${comic.volume ? `Tome ${comic.volume}` : ''} ${comic.title}`.trim();
+        console.log("Searching for cover with title:", searchTitle);
+        const coverUrl = await searchCoverImage(searchTitle, comic.author);
         if (coverUrl) {
           comic.coverUrl = coverUrl;
         }
-        onAddComic(comic);
-      });
-    } else {
+      }
+
       onAddComic(comic);
+      setOpen(false);
+      toast.success("BD ajoutée avec succès!");
+    } catch (error) {
+      console.error("Error processing comic:", error);
+      toast.error("Erreur lors de l'ajout de la BD");
     }
-    
-    toast.success("BD ajoutée avec succès!");
   };
 
   return (
