@@ -1,14 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Comic } from '@/lib/types';
 import { ComicGrid } from '@/components/ComicGrid';
 import { AddComicModal } from '@/components/AddComicModal';
 import { SearchComicModal } from '@/components/SearchComicModal';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function Index() {
   const [comics, setComics] = useState<Comic[]>([]);
   const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    console.log("Setting up Firestore listener");
+    const unsubscribe = onSnapshot(collection(db, 'comics'), (snapshot) => {
+      const comicsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Comic[];
+      console.log("Comics data updated:", comicsData);
+      setComics(comicsData);
+    }, (error) => {
+      console.error("Error fetching comics:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleAddComic = (comic: Comic) => {
     setComics((prev) => [...prev, comic]);

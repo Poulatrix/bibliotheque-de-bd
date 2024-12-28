@@ -23,7 +23,7 @@ export function ComicGrid({ comics }: ComicGridProps) {
 
   const handleAddMissing = async (comic: Comic) => {
     try {
-      await addDoc(collection(db, 'comics'), {
+      const docRef = await addDoc(collection(db, 'comics'), {
         ...comic,
         missing: false,
         dateAdded: new Date()
@@ -33,6 +33,8 @@ export function ComicGrid({ comics }: ComicGridProps) {
         title: "BD ajoutée",
         description: `${comic.title} a été ajouté à votre bibliothèque`,
       });
+
+      // La mise à jour de l'interface se fera automatiquement grâce au onSnapshot
     } catch (error) {
       console.error("Erreur lors de l'ajout de la BD:", error);
       toast({
