@@ -5,9 +5,12 @@ const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 export async function searchComics(query: string): Promise<GoogleBookResult[]> {
   console.log('Searching for comics with query:', query);
   try {
-    const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`
-    );
+    // Ensure proper URL encoding and remove any potential trailing colons
+    const sanitizedQuery = encodeURIComponent(query.replace(/:/g, ''));
+    const url = `${GOOGLE_BOOKS_API}?q=${sanitizedQuery}&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`;
+    console.log('Making request to:', url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       console.error('API response error:', response.status, response.statusText);
@@ -38,15 +41,20 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
 
 export async function searchByISBN(isbn: string): Promise<GoogleBookResult[]> {
   console.log('Searching by ISBN:', isbn);
-  return searchComics(`isbn:${isbn}`);
+  // Remove any colons from ISBN before searching
+  const sanitizedIsbn = isbn.replace(/:/g, '');
+  return searchComics(`isbn:${sanitizedIsbn}`);
 }
 
 export async function getSeriesBooks(seriesId: string): Promise<GoogleBookResult[]> {
   console.log('Fetching series books for:', seriesId);
   try {
-    const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=intitle:"${encodeURIComponent(seriesId)}"&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`
-    );
+    // Ensure proper URL encoding and remove any potential trailing colons
+    const sanitizedSeriesId = encodeURIComponent(seriesId.replace(/:/g, ''));
+    const url = `${GOOGLE_BOOKS_API}?q=intitle:"${sanitizedSeriesId}"&langRestrict=fr&maxResults=20&printType=books&fields=items(id,volumeInfo)`;
+    console.log('Making request to:', url);
+
+    const response = await fetch(url);
 
     if (!response.ok) {
       console.error('API response error:', response.status, response.statusText);
@@ -90,10 +98,12 @@ export function convertEANtoISBN(ean: string): string | null {
 export async function searchCoverImage(title: string, author: string): Promise<string | null> {
   console.log('Searching cover image for:', title, author);
   try {
-    // Use the Books API instead of Custom Search API
-    const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(`${title} ${author}`)}&langRestrict=fr&maxResults=1&printType=books&fields=items(volumeInfo(imageLinks))`
-    );
+    // Ensure proper URL encoding and remove any potential trailing colons
+    const sanitizedQuery = encodeURIComponent(`${title} ${author}`.replace(/:/g, ''));
+    const url = `${GOOGLE_BOOKS_API}?q=${sanitizedQuery}&langRestrict=fr&maxResults=1&printType=books&fields=items(volumeInfo(imageLinks))`;
+    console.log('Making request to:', url);
+
+    const response = await fetch(url);
 
     if (!response.ok) {
       console.error('API response error:', response.status, response.statusText);
