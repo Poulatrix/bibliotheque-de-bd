@@ -8,7 +8,9 @@ class RateLimiter {
   private queue: QueueItem[] = [];
   private processing = false;
   private lastRequestTime = 0;
-  private readonly minDelay = 600; // 600ms entre chaque requête = ~100 requêtes/minute
+  private readonly minDelay = 600; // 600ms between requests = ~100 requests/minute
+  private retryCount = 0;
+  private readonly maxRetries = 3;
 
   async enqueue<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -31,19 +33,34 @@ class RateLimiter {
 
       const item = this.queue.shift()!;
       try {
+        console.log('Processing request from queue...');
         this.lastRequestTime = Date.now();
         const result = await item.fn();
+        this.retryCount = 0; // Reset retry count on success
         item.resolve(result);
-      } catch (error) {
-        if (error.status === 429) {
-          // En cas d'erreur 429, remettre la requête dans la file d'attente
-          console.log('Rate limit atteint, nouvelle tentative dans 1 minute...');
+      } catch (error: any) {
+        console.error('Request error:', error);
+        
+        if (error?.status === 429 && this.retryCount < this.maxRetries) {
+          // Rate limit hit - put the request back in queue and wait
+          console.log(`Rate limit hit, retry attempt ${this.retryCount + 1}/${this.maxRetries}`);
           this.queue.unshift(item);
-          await new Promise(resolve => setTimeout(resolve, 60000));
+          this.retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+          continue;
+        }
+
+        if (this.retryCount >= this.maxRetries) {
+          console.error('Max retries reached, failing request');
+          item.reject(new Error('Max retries reached for rate limited request'));
         } else {
           item.reject(error);
         }
+        this.retryCount = 0;
       }
+
+      // Add a small delay between requests even if we haven't hit the rate limit
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     this.processing = false;
