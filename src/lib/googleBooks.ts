@@ -22,6 +22,26 @@ async function makeRequest(url: string) {
   return data;
 }
 
+export function convertEANtoISBN(ean: string): string | null {
+  if (ean.length !== 13 || !/^\d+$/.test(ean)) {
+    return null;
+  }
+
+  // Remove EAN prefix (usually 978 or 979 for books)
+  const isbn9 = ean.slice(3, 12);
+
+  // Calculate check digit
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(isbn9[i]) * (10 - i);
+  }
+  
+  const checkDigit = (11 - (sum % 11)) % 11;
+  const checkChar = checkDigit === 10 ? 'X' : checkDigit.toString();
+
+  return isbn9 + checkChar;
+}
+
 export async function searchComics(query: string): Promise<GoogleBookResult[]> {
   console.log('Searching for comics with query:', query);
   
@@ -47,6 +67,12 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
       return filteredResults;
     } catch (error) {
       console.error('Error searching comics:', error);
+      if (error?.status === 429) {
+        // If we hit rate limit, wait and retry
+        console.log('Rate limit hit, retrying after delay...');
+        await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+        return searchComics(query);
+      }
       throw error;
     }
   });
@@ -54,7 +80,7 @@ export async function searchComics(query: string): Promise<GoogleBookResult[]> {
 
 export async function searchByISBN(isbn: string): Promise<GoogleBookResult[]> {
   console.log('Searching by ISBN:', isbn);
-  const sanitizedIsbn = isbn.replace(/:/g, '');
+  const sanitizedIsbn = isbn.replace(/[^0-9X]/gi, '');
   return searchComics(`isbn:${sanitizedIsbn}`);
 }
 
@@ -79,7 +105,10 @@ export async function searchCoverImage(title: string, author: string): Promise<s
     } catch (error) {
       console.error('Error searching cover image:', error);
       if (error?.status === 429) {
-        throw error; // Let the rate limiter handle it
+        // If we hit rate limit, wait and retry
+        console.log('Rate limit hit, retrying after delay...');
+        await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+        return searchCoverImage(title, author);
       }
       return null;
     }
