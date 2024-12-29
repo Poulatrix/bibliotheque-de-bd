@@ -5,8 +5,6 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { FilterSection } from './FilterSection';
 import { SeriesSection } from './SeriesSection';
-import { updateDoc, doc } from 'firebase/firestore';
-import { searchCoverImage } from '@/lib/googleBooks';
 
 interface ComicGridProps {
   comics: Comic[];
@@ -45,37 +43,6 @@ export function ComicGrid({ comics }: ComicGridProps) {
     }
   };
 
-  const handleCoverError = async (comic: Comic) => {
-    try {
-      const searchTitle = `${comic.series} ${comic.volume ? `Tome ${comic.volume}` : ''} ${comic.title}`.trim();
-      const newCoverUrl = await searchCoverImage(searchTitle, comic.author);
-      
-      if (newCoverUrl) {
-        await updateDoc(doc(db, 'comics', comic.id), {
-          coverUrl: newCoverUrl
-        });
-        toast({
-          title: "Couverture mise à jour",
-          description: "Une nouvelle couverture a été trouvée",
-        });
-      } else {
-        const manualUrl = prompt("Aucune couverture trouvée. Entrez une URL manuellement :");
-        if (manualUrl) {
-          await updateDoc(doc(db, 'comics', comic.id), {
-            coverUrl: manualUrl
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error updating cover:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour la couverture",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Grouper et trier les comics
   const groupedComics = comics.reduce((acc: SeriesGroup, comic) => {
     const series = comic.series || 'Autres';
@@ -107,25 +74,14 @@ export function ComicGrid({ comics }: ComicGridProps) {
         
         for (let i = 1; i <= maxVol; i++) {
           if (!volumes.includes(i)) {
-            const missingTitle = `${series} - Tome ${i}`;
             groupedComics[series].push({
               id: `missing-${series}-${i}`,
-              title: missingTitle,
+              title: `${series} - Tome ${i}`,
               series,
               volume: i,
               author: firstComic.author,
               coverUrl: '/placeholder.svg',
               missing: true
-            });
-
-            // Lancer une recherche de couverture en arrière-plan
-            searchCoverImage(missingTitle, firstComic.author).then(coverUrl => {
-              if (coverUrl) {
-                const comicIndex = groupedComics[series].findIndex(c => c.id === `missing-${series}-${i}`);
-                if (comicIndex !== -1) {
-                  groupedComics[series][comicIndex].coverUrl = coverUrl;
-                }
-              }
             });
           }
         }
@@ -168,7 +124,6 @@ export function ComicGrid({ comics }: ComicGridProps) {
             series={series}
             comics={groupedComics[series]}
             onAddMissing={handleAddMissing}
-            onCoverError={handleCoverError}
             showMissingOnly={showMissingOnly}
           />
         ))}

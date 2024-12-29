@@ -5,11 +5,10 @@ interface SeriesSectionProps {
   series: string;
   comics: Comic[];
   onAddMissing: (comic: Comic) => void;
-  onCoverError: (comic: Comic) => void;
   showMissingOnly: boolean;
 }
 
-export function SeriesSection({ series, comics, onAddMissing, onCoverError, showMissingOnly }: SeriesSectionProps) {
+export function SeriesSection({ series, comics, onAddMissing, showMissingOnly }: SeriesSectionProps) {
   const filteredComics = showMissingOnly
     ? comics.filter(comic => comic.missing)
     : comics;
@@ -28,7 +27,6 @@ export function SeriesSection({ series, comics, onAddMissing, onCoverError, show
             comic={comic} 
             className={comic.missing ? 'missing' : ''}
             onAddMissing={onAddMissing}
-            onCoverError={onCoverError}
           />
         ))}
       </div>
