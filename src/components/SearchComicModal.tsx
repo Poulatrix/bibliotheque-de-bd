@@ -65,6 +65,7 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
           undefined,
         coverUrl: result.volumeInfo.imageLinks?.thumbnail || '/placeholder.svg',
         description: result.volumeInfo.description || '',
+        isRead: false
       };
 
       console.log("Prepared comic object:", comic);
@@ -80,7 +81,7 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
       }
 
       onAddComic(comic);
-      setOpen(false);
+      // Ne plus fermer la modal après l'ajout
       toast.success("BD ajoutée avec succès!");
     } catch (error) {
       console.error("Error processing comic:", error);

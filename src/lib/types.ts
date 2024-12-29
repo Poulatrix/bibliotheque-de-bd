@@ -8,6 +8,7 @@ export interface Comic {
   coverUrl: string;
   description?: string;
   missing?: boolean;
+  isRead?: boolean;
 }
 
 export interface GoogleBookResult {
@@ -19,6 +20,10 @@ export interface GoogleBookResult {
     description?: string;
     imageLinks?: {
       thumbnail: string;
+      small?: string;
+      medium?: string;
+      large?: string;
+      extraLarge?: string;
     };
   };
 }
