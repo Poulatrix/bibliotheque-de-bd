@@ -71,9 +71,9 @@ export function SearchComicModal({ onAddComic }: SearchComicModalProps) {
 
       // Si pas de couverture, rechercher une image
       if (!result.volumeInfo.imageLinks?.thumbnail) {
-        const searchTitle = `${comic.series} ${comic.volume ? `Tome ${comic.volume}` : ''} ${comic.title}`.trim();
-        console.log("Searching for cover with title:", searchTitle);
-        const coverUrl = await searchCoverImage(searchTitle, comic.author);
+        const searchQuery = `${comic.series} ${comic.volume ? `Tome ${comic.volume}` : ''} ${comic.title}`.trim();
+        console.log("Searching for cover with title:", searchQuery);
+        const coverUrl = await searchCoverImage(searchQuery);
         if (coverUrl) {
           comic.coverUrl = coverUrl;
         }

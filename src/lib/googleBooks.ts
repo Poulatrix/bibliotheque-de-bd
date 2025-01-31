@@ -6,6 +6,26 @@ const sanitizeUrl = (url: string): string => {
   return url.replace(':/', '/').replace(/([^:])\/\/+/g, '$1/');
 };
 
+export function convertEANtoISBN(ean: string): string | null {
+  if (ean.length !== 13 || !/^\d+$/.test(ean)) {
+    return null;
+  }
+
+  // Remove the EAN prefix (usually 978 or 979)
+  const isbn9 = ean.slice(3, 12);
+
+  // Calculate the ISBN check digit
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(isbn9[i]) * (10 - i);
+  }
+  
+  const checkDigit = (11 - (sum % 11)) % 11;
+  const checkChar = checkDigit === 10 ? 'X' : checkDigit.toString();
+
+  return isbn9 + checkChar;
+}
+
 export async function searchComics(query: string) {
   const baseUrl = 'https://www.googleapis.com/books/v1/volumes';
   const params = new URLSearchParams({
@@ -49,10 +69,10 @@ export async function searchByISBN(isbn: string) {
       throw new Error(`API request failed with status ${response.status}`);
     }
     const data = await response.json();
-    return data.items?.[0] || null;
+    return data.items || [];
   } catch (error) {
     console.error('Error searching by ISBN:', error);
-    return null;
+    return [];
   }
 }
 

@@ -75,7 +75,8 @@ export function AddComicModal({ onAddComic }: AddComicModalProps) {
     }
 
     try {
-      const coverUrl = await searchCoverImage(formData.title, formData.author);
+      const searchQuery = `${formData.title} ${formData.author}`;
+      const coverUrl = await searchCoverImage(searchQuery);
       if (coverUrl) {
         setFormData(prev => ({ ...prev, coverUrl }));
         toast.success("Couverture trouvée !");
